@@ -64,19 +64,19 @@ module Akami
 
         sig = signed_info.merge(key_info).merge(signature_value)
         sig.merge! :order! => []
-        [ "SignedInfo", "SignatureValue", "KeyInfo" ].each do |key|
+        [ "ds:SignedInfo", "ds:SignatureValue", "ds:KeyInfo" ].each do |key|
           sig[:order!] << key if sig[key]
         end
 
         token = {
-          "Signature" => sig,
-          :attributes! => { "Signature" => { "xmlns" => SignatureNamespace } },
+          "ds:Signature" => sig,
+          :attributes! => { "ds:Signature" => { "xmlns:ds" => SignatureNamespace } },
         }
 
         token.deep_merge!(binary_security_token) if certs.cert
 
         token.merge! :order! => []
-        [ "wsse:BinarySecurityToken", "Signature" ].each do |key|
+        [ "wsse:BinarySecurityToken", "ds:Signature" ].each do |key|
           token[:order!] << key if token[key]
         end
 
@@ -86,7 +86,7 @@ module Akami
       private
 
       def binary_security_token
-        {
+        { #Todo these attributes aren't being added
           "wsse:BinarySecurityToken" => Base64.encode64(certs.cert.to_der).gsub("\n", ''),
           :attributes! => { "wsse:BinarySecurityToken" => {
             "wsu:Id" => security_token_id,
@@ -99,7 +99,7 @@ module Akami
 
       def key_info
         {
-          "KeyInfo" => {
+          "ds:KeyInfo" => { #Todo need attribute Id="KeyId-22804747"
             "wsse:SecurityTokenReference" => {
               "wsse:Reference/" => nil,
               :attributes! => { "wsse:Reference/" => {
@@ -108,31 +108,32 @@ module Akami
               } }
             },
             :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" } },
+              #Todo also requires wsu:Id="STRId-20667268">
           },
         }
       end
 
       def signature_value
-        { "SignatureValue" => the_signature }
+        { "ds:SignatureValue" => the_signature }
       rescue MissingCertificate
         {}
       end
 
       def signed_info
         {
-          "SignedInfo" => {
-            "CanonicalizationMethod/" => nil,
-            "SignatureMethod/" => nil,
-            "Reference" => [
+          "ds:SignedInfo" => {
+            "ds:CanonicalizationMethod/" => nil,
+            "ds:SignatureMethod/" => nil,
+            "ds:Reference" => [
               #signed_info_transforms.merge(signed_info_digest_method).merge({ "DigestValue" => timestamp_digest }),
-              signed_info_transforms.merge(signed_info_digest_method).merge({ "DigestValue" => body_digest }),
+              signed_info_transforms.merge(signed_info_digest_method).merge({ "ds:DigestValue" => body_digest }),
             ],
             :attributes! => {
-              "CanonicalizationMethod/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm },
-              "SignatureMethod/" => { "Algorithm" => RSASHA1SignatureAlgorithm },
-              "Reference" => { "URI" => ["##{body_id}"] },
+              "ds:CanonicalizationMethod/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm },
+              "ds:SignatureMethod/" => { "Algorithm" => RSASHA1SignatureAlgorithm },
+              "ds:Reference" => { "URI" => ["##{body_id}"] },
             },
-            :order! => [ "CanonicalizationMethod/", "SignatureMethod/", "Reference" ],
+            :order! => [ "ds:CanonicalizationMethod/", "ds:SignatureMethod/", "ds:Reference" ],
           },
         }
       end
@@ -151,11 +152,11 @@ module Akami
       end
 
       def signed_info_digest_method
-        { "DigestMethod/" => nil, :attributes! => { "DigestMethod/" => { "Algorithm" => SHA1DigestAlgorithm } } }
+        { "ds:DigestMethod/" => nil, :attributes! => { "ds:DigestMethod/" => { "Algorithm" => SHA1DigestAlgorithm } } }
       end
 
       def signed_info_transforms
-        { "Transforms" => { "Transform/" => nil, :attributes! => { "Transform/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm } } } }
+        { "ds:Transforms" => { "Transform/" => nil, :attributes! => { "ds:Transform/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm } } } }
       end
 
       def uid

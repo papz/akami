@@ -47,11 +47,11 @@ module Akami
     end
 
     attr_accessor :username, :password, :created_at, :expires_at, :signature, :verify_response
-    
+
     def sign_with=(klass)
       @signature = klass
     end
-    
+
     def signature?
       !!@signature
     end
@@ -90,46 +90,81 @@ module Akami
     # Returns the XML for a WSSE header.
     def to_xml
       if signature? and signature.have_document?
-        Gyoku.xml wsse_signature.merge!(hash)
-      elsif username_token? && timestamp?
-        Gyoku.xml wsse_username_token.merge!(wsu_timestamp) {
-          |key, v1, v2| v1.merge!(v2) {
-            |key, v1, v2| v1.merge!(v2)
-          }
-        }
-      elsif username_token?
-        Gyoku.xml wsse_username_token.merge!(hash)
-      elsif timestamp?
-        Gyoku.xml wsu_timestamp.merge!(hash)
+        puts 'signing'
+        puts 'wsse usernam'
+        #puts "token #{Gyoku.xml(wsse_username_token.merge!(hash))}"
+        puts 'wsse_signature - '
+        puts "#{wsse_signature["wsse:Security"]}"
+        security_block = wsse_signature
+        security_block["wsse:Security"].merge!(wsse_username_token)
+        security_block["wsse:Security"][:order!] << 'wsse:UsernameToken'
+        #security_block = wsse_signature["wsse:Security"].merge!(wsse_username_token) #) (wsse_username_token.merge!(hash))
+        Gyoku.xml(security_block)
       else
         ""
       end
+      #elsif username_token?
+      #  Gyoku.xml wsse_username_token.merge!(hash)
+      #elsif timestamp?
+      #  Gyoku.xml wsu_timestamp.merge!(hash)
+      #else
+      #  ""
+      #end
     end
 
-  private
+    def un_to_xml
+      Gyoku.xml wsse_username_token.merge!(wsu_timestamp) {
+          |key, v1, v2| v1.merge!(v2) {
+            |key, v1, v2| v1.merge!(v2)
+        }
+      }
+    end
+
+    private
 
     # Returns a Hash containing wsse:UsernameToken details.
     def wsse_username_token
       if digest?
         security_hash :wsse, "UsernameToken",
-          "wsse:Username" => username,
-          "wsse:Nonce" => nonce,
-          "wsu:Created" => timestamp,
-          "wsse:Password" => digest_password,
-          :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI } }
+            "wsse:Username" => username,
+            "wsse:Nonce" => nonce,
+            "wsu:Created" => timestamp,
+            "wsse:Password" => digest_password,
+            :attributes! => {"wsse:Password" => {"Type" => PASSWORD_DIGEST_URI}}
       else
-        security_hash :wsse, "UsernameToken",
-          "wsse:Username" => username,
-          "wsse:Password" => password,
-          :attributes! => { "wsse:Password" => { "Type" => PASSWORD_TEXT_URI } }
+        namespace = :wsse
+        tag = "UsernameToken"
+        key = [namespace, tag].compact.join(":")
+        sec_hash = {key =>
+            {"wsse:Username" => username,
+                "wsse:Password" => password,
+                "wsse:Nonce" => nonce,
+                "wsu:Created" => timestamp,
+                :attributes! => {"wsse:Password" => {"Type" => PASSWORD_TEXT_URI}}}}
+        sec_hash['wsse:UsernameToken'].merge! :order! => []
+        sec_hash.merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
+        sec_hash['wsse:UsernameToken'][:order!] << "wsse:Username"
+        sec_hash['wsse:UsernameToken'][:order!] << "wsse:Password"
+        sec_hash['wsse:UsernameToken'][:order!] << "wsse:Nonce"
+        sec_hash['wsse:UsernameToken'][:order!] << "wsu:Created"
+        #sec_hash["wsse:Security"].merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
+        #security_hash :wsse, "UsernameToken",
+        #    "wsse:Username" => username,
+        #    "wsse:Password" => password,
+        #    :attributes! => {"wsse:Password" => {"Type" => PASSWORD_TEXT_URI}}
+        sec_hash
       end
     end
 
     def wsse_signature
-      signature_hash = signature.to_token
+      signature_hash = signature.to_token #Todo get :attributes! from these two and set them
+      signature_attributes[:attributes!] = signature_hash[:attributes!]['ds:Signature']
+      binary_security_token_attributes = signature_hash[:attributes!]['wsse:BinarySecurityToken']
 
       # First key/value is tag/hash
       tag, hash = signature_hash.shift
+      hash[:attributes!] = signature_attributes
+      signature_hash[:attributes!] = binary_security_token_attributes
 
       security_hash nil, tag, hash, signature_hash
     end
@@ -137,8 +172,8 @@ module Akami
     # Returns a Hash containing wsu:Timestamp details.
     def wsu_timestamp
       security_hash :wsu, "Timestamp",
-        "wsu:Created" => (created_at || Time.now).xs_datetime,
-        "wsu:Expires" => (expires_at || (created_at || Time.now) + 60).xs_datetime
+          "wsu:Created" => (created_at || Time.now).xs_datetime,
+          "wsu:Expires" => (expires_at || (created_at || Time.now) + 60).xs_datetime
     end
 
     # Returns a Hash containing wsse/wsu Security details for a given
@@ -147,10 +182,10 @@ module Akami
       key = [namespace, tag].compact.join(":")
 
       sec_hash = {
-        "wsse:Security" => {
-          key => hash
-        },
-        :attributes! => { "wsse:Security" => { "xmlns:wsse" => WSE_NAMESPACE } }
+          "wsse:Security" => {
+              key => hash
+          },
+          :attributes! => {"wsse:Security" => {"xmlns:wsse" => WSE_NAMESPACE}}
       }
 
       unless extra_info.empty?
@@ -160,7 +195,7 @@ module Akami
       if signature?
         sec_hash[:attributes!].merge!("soapenv:mustUnderstand" => "1")
       else
-        sec_hash["wsse:Security"].merge!(:attributes! => { key => { "wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE } })
+        sec_hash["wsse:Security"].merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
       end
 
       sec_hash
