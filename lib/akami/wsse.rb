@@ -96,8 +96,13 @@ module Akami
         puts 'wsse_signature - '
         puts "#{wsse_signature["wsse:Security"]}"
         security_block = wsse_signature
+        attributes = security_block["wsse:Security"][:attributes!].merge!(wsse_username_token[:attributes!])
         security_block["wsse:Security"].merge!(wsse_username_token)
-        security_block["wsse:Security"][:order!] << 'wsse:UsernameToken'
+        security_block["wsse:Security"].merge! :order! => []
+        ["wsse:UsernameToken", "wsse:BinarySecurityToken", "ds:Signature"].each do |key|
+          security_block["wsse:Security"][:order!] << key
+        end
+        security_block["wsse:Security"][:attributes!].merge!(attributes)
         #security_block = wsse_signature["wsse:Security"].merge!(wsse_username_token) #) (wsse_username_token.merge!(hash))
         Gyoku.xml(security_block)
       else
@@ -157,14 +162,15 @@ module Akami
     end
 
     def wsse_signature
-      signature_hash = signature.to_token #Todo get :attributes! from these two and set them
-      signature_attributes[:attributes!] = signature_hash[:attributes!]['ds:Signature']
+      signature_hash = signature.to_token
+      signature_attributes = {}
+      signature_attributes = signature_hash[:attributes!]['ds:Signature']
       binary_security_token_attributes = signature_hash[:attributes!]['wsse:BinarySecurityToken']
 
       # First key/value is tag/hash
       tag, hash = signature_hash.shift
-      hash[:attributes!] = signature_attributes
-      signature_hash[:attributes!] = binary_security_token_attributes
+      signature_hash[:attributes!]['wsse:BinarySecurityToken'] = binary_security_token_attributes
+      signature_hash[:attributes!]['ds:Signature'] = signature_attributes
 
       security_hash nil, tag, hash, signature_hash
     end
@@ -193,7 +199,7 @@ module Akami
       end
 
       if signature?
-        sec_hash[:attributes!].merge!("soapenv:mustUnderstand" => "1")
+        sec_hash[:attributes!]["wsse:Security"].merge!("soapenv:mustUnderstand" => "1")
       else
         sec_hash["wsse:Security"].merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
       end

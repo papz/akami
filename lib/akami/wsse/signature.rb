@@ -52,6 +52,18 @@ module Akami
         @security_token_id ||= "SecurityToken-#{uid}".freeze
       end
 
+      def key_info_id
+          "KeyId-#{uid}".freeze
+      end
+
+      def signature_id
+          "Signature-#{uid}".freeze
+      end
+
+      def element_id(name)
+        "#{name}-#{uid}".freeze
+      end
+
       def body_attributes
         {
           "xmlns:wsu" => Akami::WSSE::WSU_NAMESPACE,
@@ -70,15 +82,17 @@ module Akami
 
         token = {
           "ds:Signature" => sig,
-          :attributes! => { "ds:Signature" => { "xmlns:ds" => SignatureNamespace } },
+          :attributes! => {
+              "ds:Signature" => { "xmlns:ds" => SignatureNamespace, "Id" => signature_id }
+          },
         }
 
         token.deep_merge!(binary_security_token) if certs.cert
 
-        token.merge! :order! => []
-        [ "wsse:BinarySecurityToken", "ds:Signature" ].each do |key|
-          token[:order!] << key if token[key]
-        end
+        #token.merge! :order! => []
+        #[ "'wsse:UsernameToken'", "wsse:BinarySecurityToken", "ds:Signature" ].each do |key|
+        #  token[:order!] << key if token[key]
+        #end
 
         token
       end
@@ -86,7 +100,7 @@ module Akami
       private
 
       def binary_security_token
-        { #Todo these attributes aren't being added
+        {
           "wsse:BinarySecurityToken" => Base64.encode64(certs.cert.to_der).gsub("\n", ''),
           :attributes! => { "wsse:BinarySecurityToken" => {
             "wsu:Id" => security_token_id,
@@ -99,7 +113,7 @@ module Akami
 
       def key_info
         {
-          "ds:KeyInfo" => { #Todo need attribute Id="KeyId-22804747"
+          "ds:KeyInfo" => {
             "wsse:SecurityTokenReference" => {
               "wsse:Reference/" => nil,
               :attributes! => { "wsse:Reference/" => {
@@ -107,9 +121,10 @@ module Akami
                 "URI" => "##{security_token_id}",
               } }
             },
-            :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" } },
+            :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd", "wsu:Id" => element_id("STRd") } },
               #Todo also requires wsu:Id="STRId-20667268">
           },
+            :attributes! => { "ds:KeyInfo" => { "Id" => key_info_id } }
         }
       end
 
@@ -156,7 +171,7 @@ module Akami
       end
 
       def signed_info_transforms
-        { "ds:Transforms" => { "Transform/" => nil, :attributes! => { "ds:Transform/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm } } } }
+        { "ds:Transforms" => { "ds:Transform/" => nil, :attributes! => { "ds:Transform/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm } } } }
       end
 
       def uid

@@ -5,22 +5,22 @@ describe Akami do
 
   it "contains the namespace for WS Security Secext" do
     Akami::WSSE::WSE_NAMESPACE.should ==
-      "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
   end
 
   it "contains the namespace for WS Security Utility" do
     Akami::WSSE::WSU_NAMESPACE.should ==
-      "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
   end
 
   it "contains the namespace for the PasswordText type" do
     Akami::WSSE::PASSWORD_TEXT_URI.should ==
-      "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"
   end
 
   it "contains the namespace for the PasswordDigest type" do
     Akami::WSSE::PASSWORD_DIGEST_URI.should ==
-      "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest"
+        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest"
   end
 
   describe "#credentials" do
@@ -129,6 +129,14 @@ describe Akami do
       it "contains the PasswordText type attribute" do
         wsse.to_xml.should include(Akami::WSSE::PASSWORD_TEXT_URI)
       end
+
+      context "with credentials and signature" do
+        wsse.credentials "pblcgxs", "4gxs2uAt"
+        certs = Akami::WSSE::Certs.new :cert_file => CRT, :private_key_file => PEM, :private_key_password => "vAnedEd3"
+        wsse.sign_with = Akami::WSSE::Signature.new(certs)
+        wsse.timestamp = true
+
+      end
     end
 
     context "with credentials and digest auth" do
@@ -165,7 +173,7 @@ describe Akami do
 
       it "contains a wsse:Timestamp node" do
         wsse.to_xml.should include('<wsu:Timestamp wsu:Id="Timestamp-1" ' +
-          'xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">')
+            'xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">')
       end
 
       it "contains a wsu:Created node defaulting to Time.now" do
