@@ -130,11 +130,16 @@ describe Akami do
         wsse.to_xml.should include(Akami::WSSE::PASSWORD_TEXT_URI)
       end
 
-      context "with credentials and signature" do
-        wsse.credentials "pblcgxs", "4gxs2uAt"
-        certs = Akami::WSSE::Certs.new :cert_file => CRT, :private_key_file => PEM, :private_key_password => "vAnedEd3"
-        wsse.sign_with = Akami::WSSE::Signature.new(certs)
-        wsse.timestamp = true
+      context "Test DNRM with credentials and cert files" do
+        it "test with dnrm" do
+          DNRM_SERVICE = '/home/paul/work/px/doc/derm_direct/dEnquiries.wsdl'
+          CRT = 'vendor/DnrmDirect/certs/gxs_ats_dev2.crt'
+          PEM = 'vendor/DnrmDirect/certs/gxs_ats_dev.pem'
+          wsse.credentials "pblcgxs", "4gxs2uAt"
+          certs = Akami::WSSE::Certs.new :cert_file => CRT, :private_key_file => PEM, :private_key_password => "vAnedEd3"
+          wsse.sign_with = Akami::WSSE::Signature.new(certs)
+          wsse.timestamp = true
+        end
 
       end
     end

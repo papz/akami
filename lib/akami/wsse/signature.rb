@@ -122,7 +122,6 @@ module Akami
               } }
             },
             :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd", "wsu:Id" => element_id("STRd") } },
-              #Todo also requires wsu:Id="STRId-20667268">
           },
             :attributes! => { "ds:KeyInfo" => { "Id" => key_info_id } }
         }
