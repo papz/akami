@@ -89,11 +89,6 @@ module Akami
 
         token.deep_merge!(binary_security_token) if certs.cert
 
-        #token.merge! :order! => []
-        #[ "'wsse:UsernameToken'", "wsse:BinarySecurityToken", "ds:Signature" ].each do |key|
-        #  token[:order!] << key if token[key]
-        #end
-
         token
       end
 
@@ -139,7 +134,6 @@ module Akami
             "ds:CanonicalizationMethod/" => nil,
             "ds:SignatureMethod/" => nil,
             "ds:Reference" => [
-              #signed_info_transforms.merge(signed_info_digest_method).merge({ "DigestValue" => timestamp_digest }),
               signed_info_transforms.merge(signed_info_digest_method).merge({ "ds:DigestValue" => body_digest }),
             ],
             :attributes! => {

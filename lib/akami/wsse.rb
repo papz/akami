@@ -90,11 +90,6 @@ module Akami
     # Returns the XML for a WSSE header.
     def to_xml
       if signature? and signature.have_document?
-        puts 'signing'
-        puts 'wsse usernam'
-        #puts "token #{Gyoku.xml(wsse_username_token.merge!(hash))}"
-        puts 'wsse_signature - '
-        puts "#{wsse_signature["wsse:Security"]}"
         security_block = wsse_signature
         attributes = security_block["wsse:Security"][:attributes!].merge!(wsse_username_token[:attributes!])
         security_block["wsse:Security"].merge!(wsse_username_token)
@@ -103,18 +98,10 @@ module Akami
           security_block["wsse:Security"][:order!] << key
         end
         security_block["wsse:Security"][:attributes!].merge!(attributes)
-        #security_block = wsse_signature["wsse:Security"].merge!(wsse_username_token) #) (wsse_username_token.merge!(hash))
         Gyoku.xml(security_block)
       else
         ""
       end
-      #elsif username_token?
-      #  Gyoku.xml wsse_username_token.merge!(hash)
-      #elsif timestamp?
-      #  Gyoku.xml wsu_timestamp.merge!(hash)
-      #else
-      #  ""
-      #end
     end
 
     def un_to_xml
