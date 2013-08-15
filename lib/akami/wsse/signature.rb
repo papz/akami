@@ -95,8 +95,11 @@ module Akami
       private
 
       def binary_security_token
+        puts "public key in binary token #{certs.private_key.public_key.to_s}"
         {
-          "wsse:BinarySecurityToken" => Base64.encode64(certs.cert.to_der).gsub("\n", ''),
+          #"wsse:BinarySecurityToken" => Base64.encode64(certs.cert.to_text).gsub("\n", ''),
+            #Todo - had to change this to use a generated public key based on our private key
+          "wsse:BinarySecurityToken" => Base64.encode64(certs.private_key.public_key.to_s).gsub("\n", ''),
           :attributes! => { "wsse:BinarySecurityToken" => {
             "wsu:Id" => security_token_id,
             'EncodingType' => Base64EncodingType,
@@ -148,9 +151,10 @@ module Akami
 
       def the_signature
         raise MissingCertificate, "Expected a private_key for signing" unless certs.private_key
-        signed_info = at_xpath(@document, "//Envelope/Header/Security/Signature/SignedInfo")
+        signed_info = at_xpath(@document, "//Envelope/Header/Security/Signature/SignedInfo/Reference/DigestValue")
         signed_info = signed_info ? canonicalize(signed_info) : ""
         signature = certs.private_key.sign(OpenSSL::Digest::SHA1.new, signed_info)
+        puts "verifying ---- #{certs.private_key.public_key.verify(OpenSSL::Digest::SHA1.new, signature, signed_info)}"
         Base64.encode64(signature).gsub("\n", '') # TODO: DRY calls to Base64.encode64(...).gsub("\n", '')
       end
 
