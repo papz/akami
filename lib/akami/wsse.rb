@@ -98,6 +98,8 @@ module Akami
           security_block["wsse:Security"][:order!] << key
         end
         security_block["wsse:Security"][:attributes!].merge!(attributes)
+        #test signature
+        #signature.certs.cert.verify(OpenSSL::Digest::SHA1.new, signature, data) # => true
         Gyoku.xml(security_block)
       else
         ""
