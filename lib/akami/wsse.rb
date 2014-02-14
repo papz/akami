@@ -98,9 +98,14 @@ module Akami
           security_block["wsse:Security"][:order!] << key
         end
         security_block["wsse:Security"][:attributes!].merge!(attributes)
+        Gyoku.xml(security_block)
         #test signature
         #signature.certs.cert.verify(OpenSSL::Digest::SHA1.new, signature, data) # => true
-        Gyoku.xml(security_block)
+        #Gyoku.xml(security_block)
+      elsif !(signature? and signature.have_document?) && username_token?
+        Gyoku.xml wsse_username_token.merge!(hash)
+      elsif !(signature? and signature.have_document?) && timestamp?
+        Gyoku.xml wsu_timestamp.merge!(hash)
       else
         ""
       end
@@ -124,29 +129,29 @@ module Akami
             "wsse:Nonce" => nonce,
             "wsu:Created" => timestamp,
             "wsse:Password" => digest_password,
-            :attributes! => {"wsse:Password" => {"Type" => PASSWORD_DIGEST_URI}}
-      else
+            :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI } }
+      elsif signature? and signature.have_document?
         namespace = :wsse
         tag = "UsernameToken"
         key = [namespace, tag].compact.join(":")
-        sec_hash = {key =>
-            {"wsse:Username" => username,
+        sec_hash = { key =>
+            { "wsse:Username" => username,
                 "wsse:Password" => password,
                 "wsse:Nonce" => nonce,
                 "wsu:Created" => timestamp,
-                :attributes! => {"wsse:Password" => {"Type" => PASSWORD_TEXT_URI}}}}
+                :attributes! => { "wsse:Password" => { "Type" => PASSWORD_TEXT_URI } } } }
         sec_hash['wsse:UsernameToken'].merge! :order! => []
-        sec_hash.merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
+        sec_hash.merge!(:attributes! => { key => { "wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE } })
         sec_hash['wsse:UsernameToken'][:order!] << "wsse:Username"
         sec_hash['wsse:UsernameToken'][:order!] << "wsse:Password"
         sec_hash['wsse:UsernameToken'][:order!] << "wsse:Nonce"
         sec_hash['wsse:UsernameToken'][:order!] << "wsu:Created"
-        #sec_hash["wsse:Security"].merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
-        #security_hash :wsse, "UsernameToken",
-        #    "wsse:Username" => username,
-        #    "wsse:Password" => password,
-        #    :attributes! => {"wsse:Password" => {"Type" => PASSWORD_TEXT_URI}}
         sec_hash
+      else
+        security_hash :wsse, "UsernameToken",
+            "wsse:Username" => username,
+            "wsse:Password" => password,
+            :attributes! => { "wsse:Password" => { "Type" => PASSWORD_TEXT_URI } }
       end
     end
 
@@ -180,7 +185,7 @@ module Akami
           "wsse:Security" => {
               key => hash
           },
-          :attributes! => {"wsse:Security" => {"xmlns:wsse" => WSE_NAMESPACE}}
+          :attributes! => { "wsse:Security" => { "xmlns:wsse" => WSE_NAMESPACE } }
       }
 
       unless extra_info.empty?
@@ -189,8 +194,8 @@ module Akami
 
       if signature?
         sec_hash[:attributes!]["wsse:Security"].merge!("soapenv:mustUnderstand" => "1")
-      else
-        sec_hash["wsse:Security"].merge!(:attributes! => {key => {"wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE}})
+      elsif digest?
+        sec_hash["wsse:Security"].merge!(:attributes! => { key => { "wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE } })
       end
 
       sec_hash
