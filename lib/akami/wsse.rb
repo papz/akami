@@ -125,36 +125,34 @@ module Akami
     def wsse_username_token
       if digest?
         token = security_hash :wsse, "UsernameToken",
-        "wsse:Username" => username,
-        "wsse:Nonce" => Base64.encode64(nonce).chomp,
-        "wsu:Created" => timestamp,
-        "wsse:Password" => digest_password,
-        :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI }, "wsse:Nonce" => { "EncodingType" => BASE64_URI } }
+            "wsse:Username" => username,
+            "wsse:Nonce" => Base64.encode64(nonce).chomp,
+            "wsu:Created" => timestamp,
+            "wsse:Password" => digest_password,
+            :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI }, "wsse:Nonce" => { "EncodingType" => BASE64_URI } }
         # clear the nonce after each use
         @nonce = nil
-      elsif signature? and signature.have_document?
-        namespace = :wsse
-        tag = "UsernameToken"
-        key = [namespace, tag].compact.join(":")
-        sec_hash = { key =>
-            { "wsse:Username" => username,
-                "wsse:Password" => password,
-                "wsse:Nonce" => nonce,
-                "wsu:Created" => timestamp,
-                :attributes! => { "wsse:Password" => { "Type" => PASSWORD_TEXT_URI } } } }
-        sec_hash['wsse:UsernameToken'].merge! :order! => []
-        sec_hash.merge!(:attributes! => { key => { "wsu:Id" => "#{tag}-#{count}", "xmlns:wsu" => WSU_NAMESPACE } })
-        sec_hash['wsse:UsernameToken'][:order!] << "wsse:Username"
-        sec_hash['wsse:UsernameToken'][:order!] << "wsse:Password"
-        sec_hash['wsse:UsernameToken'][:order!] << "wsse:Nonce"
-        sec_hash['wsse:UsernameToken'][:order!] << "wsu:Created"
-        sec_hash
+      elsif signature? && signature.have_document? && username#TODO - for general cases with a signature and no username & password required
+        token = security_hash :wsse, "UsernameToken",
+            "wsse:Username" => username,
+            "wsse:Password" => password,
+            "wsse:Nonce" => nonce,
+            "wsu:Created" => timestamp,
+            :attributes! => { "wsse:Password" => { "Type" => PASSWORD_TEXT_URI } }
+        token['wsse:Security']['wsse:UsernameToken'].merge! :order! => []
+        token['wsse:Security'].merge!(:attributes! => { "wsse:UsernameToken" => { "wsu:Id" => "#{"UsernameToken"}-#{count}", "xmlns:wsu" => WSU_NAMESPACE } })
+        token['wsse:Security']['wsse:UsernameToken'][:order!] << "wsse:Username"
+        token['wsse:Security']['wsse:UsernameToken'][:order!] << "wsse:Password"
+        token['wsse:Security']['wsse:UsernameToken'][:order!] << "wsse:Nonce"
+        token['wsse:Security']['wsse:UsernameToken'][:order!] << "wsu:Created"
+        token = token['wsse:Security']
       else
-        security_hash :wsse, "UsernameToken",
+        token = security_hash :wsse, "UsernameToken",
             "wsse:Username" => username,
             "wsse:Password" => password,
             :attributes! => { "wsse:Password" => { "Type" => PASSWORD_TEXT_URI } }
       end
+      token
     end
 
     def wsse_signature
