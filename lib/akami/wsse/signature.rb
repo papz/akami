@@ -76,14 +76,14 @@ module Akami
 
         sig = signed_info.merge(key_info).merge(signature_value)
         sig.merge! :order! => []
-        [ "ds:SignedInfo", "ds:SignatureValue", "ds:KeyInfo" ].each do |key|
+        [ "SignedInfo", "SignatureValue", "KeyInfo" ].each do |key|
           sig[:order!] << key if sig[key]
         end
 
         token = {
-          "ds:Signature" => sig,
+          "Signature" => sig,
           :attributes! => {
-              "ds:Signature" => { "xmlns:ds" => SignatureNamespace, "Id" => signature_id }
+              "Signature" => { "xmlns" => SignatureNamespace, "Id" => signature_id }
           },
         }
 
@@ -110,7 +110,7 @@ module Akami
 
       def key_info
         {
-          "ds:KeyInfo" => {
+          "KeyInfo" => {
             "wsse:SecurityTokenReference" => {
               "wsse:Reference/" => nil,
               :attributes! => { "wsse:Reference/" => {
@@ -120,30 +120,30 @@ module Akami
             },
             :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd", "wsu:Id" => element_id("STRd") } },
           },
-            :attributes! => { "ds:KeyInfo" => { "Id" => key_info_id } }
+            :attributes! => { "KeyInfo" => { "Id" => key_info_id } }
         }
       end
 
       def signature_value
-        { "ds:SignatureValue" => the_signature }
+        { "SignatureValue" => the_signature }
       rescue MissingCertificate
         {}
       end
 
       def signed_info
         {
-          "ds:SignedInfo" => {
-            "ds:CanonicalizationMethod/" => nil,
-            "ds:SignatureMethod/" => nil,
-            "ds:Reference" => [
-              signed_info_transforms.merge(signed_info_digest_method).merge({ "ds:DigestValue" => body_digest }),
+          "SignedInfo" => {
+            "CanonicalizationMethod/" => nil,
+            "SignatureMethod/" => nil,
+            "Reference" => [
+              signed_info_transforms.merge(signed_info_digest_method).merge({ "DigestValue" => body_digest }),
             ],
             :attributes! => {
-              "ds:CanonicalizationMethod/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm },
-              "ds:SignatureMethod/" => { "Algorithm" => RSASHA1SignatureAlgorithm },
-              "ds:Reference" => { "URI" => ["##{body_id}"] },
+              "CanonicalizationMethod/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm },
+              "SignatureMethod/" => { "Algorithm" => RSASHA1SignatureAlgorithm },
+              "Reference" => { "URI" => ["##{body_id}"] },
             },
-            :order! => [ "ds:CanonicalizationMethod/", "ds:SignatureMethod/", "ds:Reference" ],
+            :order! => [ "CanonicalizationMethod/", "SignatureMethod/", "Reference" ],
           },
         }
       end
@@ -163,11 +163,11 @@ module Akami
       end
 
       def signed_info_digest_method
-        { "ds:DigestMethod/" => nil, :attributes! => { "ds:DigestMethod/" => { "Algorithm" => SHA1DigestAlgorithm } } }
+        { "DigestMethod/" => nil, :attributes! => { "DigestMethod/" => { "Algorithm" => SHA1DigestAlgorithm } } }
       end
 
       def signed_info_transforms
-        { "ds:Transforms" => { "ds:Transform/" => nil, :attributes! => { "ds:Transform/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm } } } }
+        { "Transforms" => { "Transform/" => nil, :attributes! => { "Transform/" => { "Algorithm" => ExclusiveXMLCanonicalizationAlgorithm } } } }
       end
 
       def uid

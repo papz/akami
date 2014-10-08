@@ -94,7 +94,7 @@ module Akami
         attributes = security_block["wsse:Security"][:attributes!].merge!(wsse_username_token[:attributes!])
         security_block["wsse:Security"].merge!(wsse_username_token)
         security_block["wsse:Security"].merge! :order! => []
-        ["wsse:UsernameToken", "wsse:BinarySecurityToken", "ds:Signature"].each do |key|
+        ["wsse:UsernameToken", "wsse:BinarySecurityToken", "Signature"].each do |key|
           security_block["wsse:Security"][:order!] << key
         end
         security_block["wsse:Security"][:attributes!].merge!(attributes)
@@ -158,13 +158,13 @@ module Akami
     def wsse_signature
       signature_hash = signature.to_token
       signature_attributes = {}
-      signature_attributes = signature_hash[:attributes!]['ds:Signature']
+      signature_attributes = signature_hash[:attributes!]['Signature']
       binary_security_token_attributes = signature_hash[:attributes!]['wsse:BinarySecurityToken']
 
       # First key/value is tag/hash
       tag, hash = signature_hash.shift
       signature_hash[:attributes!]['wsse:BinarySecurityToken'] = binary_security_token_attributes
-      signature_hash[:attributes!]['ds:Signature'] = signature_attributes
+      signature_hash[:attributes!]['Signature'] = signature_attributes
 
       security_hash nil, tag, hash, signature_hash
     end
