@@ -97,8 +97,6 @@ module Akami
       def binary_security_token
         {
           "wsse:BinarySecurityToken" => Base64.encode64(certs.cert.to_der).gsub("\n", ''),
-            #Todo - had to change this to use a generated public key based on our private key
-          #"wsse:BinarySecurityToken" => Base64.encode64(certs.private_key.public_key.to_s).gsub("\n", ''),
           :attributes! => { "wsse:BinarySecurityToken" => {
             "wsu:Id" => security_token_id,
             'EncodingType' => Base64EncodingType,
@@ -120,7 +118,6 @@ module Akami
             },
             :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd", "wsu:Id" => element_id("STRd") } },
           },
-            :attributes! => { "KeyInfo" => { "Id" => key_info_id } }
         }
       end
 
@@ -158,7 +155,6 @@ module Akami
 
       def body_digest
         body = canonicalize(at_xpath(@document, "//Envelope/Body"))
-
         Base64.encode64(OpenSSL::Digest::SHA1.digest(body)).strip
       end
 
