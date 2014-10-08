@@ -89,7 +89,7 @@ module Akami
 
     # Returns the XML for a WSSE header.
     def to_xml
-      if signature? and signature.have_document?
+      if signature? and signature.have_document? and username # for case where username token is required with signature
         security_block = wsse_signature
         attributes = security_block["wsse:Security"][:attributes!].merge!(wsse_username_token[:attributes!])
         security_block["wsse:Security"].merge!(wsse_username_token)
@@ -98,13 +98,13 @@ module Akami
           security_block["wsse:Security"][:order!] << key
         end
         security_block["wsse:Security"][:attributes!].merge!(attributes)
+        puts security_block
         Gyoku.xml(security_block)
-        #test signature
-        #signature.certs.cert.verify(OpenSSL::Digest::SHA1.new, signature, data) # => true
-        #Gyoku.xml(security_block)
-      elsif !(signature? and signature.have_document?) && username_token?
+      elsif (signature? and signature.have_document?) and !username
+        Gyoku.xml wsse_signature.merge!(hash)
+      elsif !(signature? and signature.have_document?) and username_token?
         Gyoku.xml wsse_username_token.merge!(hash)
-      elsif !(signature? and signature.have_document?) && timestamp?
+      elsif !(signature? and signature.have_document?) and timestamp?
         Gyoku.xml wsu_timestamp.merge!(hash)
       else
         ""
@@ -132,7 +132,7 @@ module Akami
             :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI }, "wsse:Nonce" => { "EncodingType" => BASE64_URI } }
         # clear the nonce after each use
         @nonce = nil
-      elsif signature? && signature.have_document? && username#TODO - for general cases with a signature and no username & password required
+      elsif signature? && signature.have_document? && username #TODO - for general cases with a signature and no username & password required
         token = security_hash :wsse, "UsernameToken",
             "wsse:Username" => username,
             "wsse:Password" => password,
