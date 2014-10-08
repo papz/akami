@@ -124,12 +124,14 @@ module Akami
     # Returns a Hash containing wsse:UsernameToken details.
     def wsse_username_token
       if digest?
-        security_hash :wsse, "UsernameToken",
-            "wsse:Username" => username,
-            "wsse:Nonce" => nonce,
-            "wsu:Created" => timestamp,
-            "wsse:Password" => digest_password,
-            :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI } }
+        token = security_hash :wsse, "UsernameToken",
+        "wsse:Username" => username,
+        "wsse:Nonce" => Base64.encode64(nonce).chomp,
+        "wsu:Created" => timestamp,
+        "wsse:Password" => digest_password,
+        :attributes! => { "wsse:Password" => { "Type" => PASSWORD_DIGEST_URI }, "wsse:Nonce" => { "EncodingType" => BASE64_URI } }
+        # clear the nonce after each use
+        @nonce = nil
       elsif signature? and signature.have_document?
         namespace = :wsse
         tag = "UsernameToken"
