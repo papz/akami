@@ -159,14 +159,10 @@ module Akami
 
     def wsse_signature
       signature_hash = signature.to_token
-      signature_attributes = {}
-      signature_attributes = signature_hash[:attributes!]['Signature']
-      binary_security_token_attributes = signature_hash[:attributes!]['wsse:BinarySecurityToken']
+      # signature_attributes = {}
 
       # First key/value is tag/hash
       tag, hash = signature_hash.shift
-      signature_hash[:attributes!]['wsse:BinarySecurityToken'] = binary_security_token_attributes
-      signature_hash[:attributes!]['Signature'] = signature_attributes
 
       security_hash nil, tag, hash, signature_hash
     end
