@@ -53,11 +53,11 @@ module Akami
       end
 
       def key_info_id
-          "KeyId-#{uid}".freeze
+        "KeyId-#{uid}".freeze
       end
 
       def signature_id
-          "Signature-#{uid}".freeze
+        "Signature-#{uid}".freeze
       end
 
       def element_id(name)
@@ -66,8 +66,8 @@ module Akami
 
       def body_attributes
         {
-          "xmlns:wsu" => Akami::WSSE::WSU_NAMESPACE,
-          "wsu:Id" => body_id,
+            "xmlns:wsu" => Akami::WSSE::WSU_NAMESPACE,
+            "wsu:Id" => body_id,
         }
       end
 
@@ -76,18 +76,21 @@ module Akami
 
         sig = signed_info.merge(key_info).merge(signature_value)
         sig.merge! :order! => []
-        [ "SignedInfo", "SignatureValue", "KeyInfo" ].each do |key|
+        ["SignedInfo", "SignatureValue", "KeyInfo"].each do |key|
           sig[:order!] << key if sig[key]
         end
 
         token = {
-          "Signature" => sig,
-          :attributes! => {
-              "Signature" => { "xmlns" => SignatureNamespace, "Id" => signature_id }
-          },
+            "Signature" => sig,
+            :attributes! => { "Signature" => { "xmlns" => SignatureNamespace } },
         }
 
         token.deep_merge!(binary_security_token) if certs.cert
+
+        token.merge! :order! => []
+        ["wsse:BinarySecurityToken", "Signature"].each do |key|
+          token[:order!] << key if token[key]
+        end
 
         token
       end
@@ -116,7 +119,7 @@ module Akami
                 "URI" => "##{security_token_id}",
               } }
             },
-            :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd", "wsu:Id" => element_id("STRd") } },
+                :attributes! => { "wsse:SecurityTokenReference" => { "xmlns:wsu" => "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" } },
           },
         }
       end

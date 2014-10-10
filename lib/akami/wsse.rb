@@ -98,7 +98,6 @@ module Akami
           security_block["wsse:Security"][:order!] << key
         end
         security_block["wsse:Security"][:attributes!].merge!(attributes)
-        puts security_block
         Gyoku.xml(security_block)
       elsif (signature? and signature.have_document?) and !username
         Gyoku.xml wsse_signature.merge!(hash)
