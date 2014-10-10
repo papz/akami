@@ -110,14 +110,6 @@ module Akami
       end
     end
 
-    def un_to_xml
-      Gyoku.xml wsse_username_token.merge!(wsu_timestamp) {
-          |key, v1, v2| v1.merge!(v2) {
-            |key, v1, v2| v1.merge!(v2)
-        }
-      }
-    end
-
     private
 
     # Returns a Hash containing wsse:UsernameToken details.
